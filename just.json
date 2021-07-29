@@ -1,0 +1,7 @@
+{
+    "version": "4",
+    "commands": {
+        "docker:build": "docker build -t assembler-service:local .",
+        "kind:load": "kind load docker-image assembler-service:local"
+    }
+}
