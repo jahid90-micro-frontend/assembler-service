@@ -26,6 +26,23 @@ app.post('/', async (req, res) => {
     const response = await axios.post(`http://${uris.PAGE_SERVICE_URI}`, { pageId });
     const { title, layout, slots } = response.data;
 
+    await Promise.all(slots.map(async (slot) => {
+
+        if (slot.widget.content) {
+            try {
+                const response = await axios.get(`http://${uris.BASE_URI}/${slot.widget.content}`);
+                slot.widget.content = response.data;
+            } catch (err) {
+                console.error(err.message);
+                slot.widget.content = 'The content is currently unavailable. Please try again later.';
+            }
+        } else {
+            console.debug(`skipping GET for slot.id - no content`);
+            slot.widget.content = 'No such widget was found!';
+        }
+
+    }));
+
     console.debug(`assembling page for ${pageId}`);
 
     res.render(layout, { title, slots });
