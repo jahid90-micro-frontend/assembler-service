@@ -22,6 +22,7 @@ app.use(bodyParser.json());
 app.post('/', async (req, res) => {
 
     const pageId = req.body.pageId;
+    const isDebug = req.query.isDebug;
 
     const response = await axios.post(`http://${uris.PAGE_SERVICE_URI}`, { pageId });
     const { title, layout, slots } = response.data;
@@ -37,15 +38,15 @@ app.post('/', async (req, res) => {
                 slot.widget.content = 'The content is currently unavailable. Please try again later.';
             }
         } else {
-            console.debug(`skipping GET for slot.id - no content`);
+            console.debug(`skipping GET for slot ${slot.id} - no content`);
             slot.widget.content = 'No such widget was found!';
         }
 
     }));
 
-    console.debug(`assembling page for ${pageId}`);
+    console.debug(`assembling page for pageId: ${pageId}`);
 
-    res.render(layout, { title, slots });
+    res.render(layout, { title, slots, meta: { isDebug } });
 
 });
 

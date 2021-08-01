@@ -11,10 +11,13 @@ html(lang='en')
 
         div.container-fluid.d-flex.flex-column.vh-100
             each slot in slots
-                div.metadata
-                    button.collapsible Widget Metadata
-                    div.collapsible-content
-                        pre= JSON.stringify(slot, null, 2)
+
+                if meta.isDebug
+                    div.metadata
+                        button.collapsible Widget Metadata
+                        div.collapsible-content
+                            pre= JSON.stringify(slot, null, 2)
+
                 div.slot(class='slot-' + slot.id)
                     != slot.widget.content
 
