@@ -29,16 +29,16 @@ app.post('/', async (req, res) => {
 
     await Promise.all(slots.map(async (slot) => {
 
-        if (slot.widget.content) {
+        if (slot.widget.uri) {
             try {
-                const response = await axios.get(`http://${uris.BASE_URI}/${slot.widget.content}`);
+                const response = await axios.get(`http://${slot.widget.uri}`);
                 slot.widget.content = response.data;
             } catch (err) {
                 console.error(err.message);
                 slot.widget.content = 'The content is currently unavailable. Please try again later.';
             }
         } else {
-            console.debug(`skipping GET for slot ${slot.id} - no content`);
+            console.debug(`skipping GET for slot ${slot.id} - no uri`);
             slot.widget.content = 'No such widget was found!';
         }
 
