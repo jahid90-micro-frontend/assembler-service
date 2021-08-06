@@ -4,7 +4,9 @@ const express = require('express');
 const morgan = require('morgan');
 const path = require('path');
 
-const uris = require('./config/uris');
+const { traceAsync } = require('@jahiduls/lib-tracing');
+
+const pageService = require('./clients/page-service-client');
 
 // Create the server
 const app = express();
@@ -28,7 +30,8 @@ app.post('/', async (req, res) => {
 
         console.debug(`Request: {pageId: ${pageId}}`);
 
-        const response = await axios.post(`http://${uris.PAGE_SERVICE_URI}`, { pageId });
+        const tracedGetPageMetadata = traceAsync(pageService.get, 'page-service-get');
+        const response = await tracedGetPageMetadata(pageId);
         const { title, layout, slots } = response.data;
 
         await Promise.all(slots.map(async (slot) => {
