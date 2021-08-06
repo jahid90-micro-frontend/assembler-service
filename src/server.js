@@ -7,6 +7,7 @@ const path = require('path');
 const { traceAsync } = require('@jahiduls/lib-tracing');
 
 const pageService = require('./clients/page-service-client');
+const commonWidgetsService = require('./clients/common-widgets-client');
 
 // Create the server
 const app = express();
@@ -30,15 +31,14 @@ app.post('/', async (req, res) => {
 
         console.debug(`Request: {pageId: ${pageId}}`);
 
-        const tracedGetPageMetadata = traceAsync(pageService.get, 'page-service-get');
-        const response = await tracedGetPageMetadata(pageId);
+        const response = await pageService.tracedGet(pageId);
         const { title, layout, slots } = response.data;
 
         await Promise.all(slots.map(async (slot) => {
 
             if (slot && slot.widget.uri) {
                 try {
-                    const response = await axios.get(`http://${slot.widget.uri}`);
+                    const response = await commonWidgetsService.tracedGet(slot.widget.uri);
                     slot.widget.content = response.data;
                 } catch (err) {
                     console.error(err.message);
