@@ -21,37 +21,45 @@ app.use(bodyParser.json());
 // Routes
 app.post('/', async (req, res) => {
 
-    const pageId = req.body.pageId;
-    const isDebug = req.query.isDebug;
+    try {
 
-    const response = await axios.post(`http://${uris.PAGE_SERVICE_URI}`, { pageId });
-    const { title, layout, slots } = response.data;
+        const pageId = req.body.pageId;
+        const isDebug = req.query.isDebug;
 
-    await Promise.all(slots.map(async (slot) => {
+        console.debug(`Request: {pageId: ${pageId}}`);
 
-        if (slot.widget.uri) {
-            try {
-                const response = await axios.get(`http://${slot.widget.uri}`);
-                slot.widget.content = response.data;
-            } catch (err) {
-                console.error(err.message);
-                slot.widget.content = 'The content is currently unavailable. Please try again later.';
+        const response = await axios.post(`http://${uris.PAGE_SERVICE_URI}`, { pageId });
+        const { title, layout, slots } = response.data;
+
+        await Promise.all(slots.map(async (slot) => {
+
+            if (slot && slot.widget.uri) {
+                try {
+                    const response = await axios.get(`http://${slot.widget.uri}`);
+                    slot.widget.content = response.data;
+                } catch (err) {
+                    console.error(err.message);
+                    slot.widget.content = 'The content is currently unavailable. Please try again later.';
+                }
+            } else {
+                slot = slot || {};
+                slot.id = slot.id || 'unknown';
+                slot.widget = slot.widget || {};
+                slot.widget.content = 'No such widget was found!';
+
+                console.warn(`skipping GET for slot ${slot.id} - no uri`);
             }
-        } else {
-            console.debug(`skipping GET for slot ${slot.id} - no uri`);
-            slot.widget.content = 'No such widget was found!';
-        }
 
-    }));
+        }));
 
-    console.debug(`assembling page for pageId: ${pageId}`);
+        res.render(layout, { title, slots, meta: { isDebug } });
 
-    res.render(layout, { title, slots, meta: { isDebug } });
+    } catch (err) {
 
+        console.error(err.message);
+
+        res.sendStatus(500);
+    }
 });
 
-// Start the server
-const port = process.env.PORT || 3000;
-app.listen(port, () => {
-    console.info(`server is up and running on port: ${port}`);
-});
+module.exports = app;
