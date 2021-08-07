@@ -4,7 +4,7 @@ const express = require('express');
 const morgan = require('morgan');
 const path = require('path');
 
-const { traceAsync } = require('@jahiduls/lib-tracing');
+const { trace, traceAsync } = require('@jahiduls/lib-tracing');
 
 const pageService = require('./clients/page-service-client');
 const commonWidgetsService = require('./clients/common-widgets-client');
@@ -34,28 +34,32 @@ app.post('/', async (req, res) => {
         const response = await pageService.tracedGet(pageId);
         const { title, layout, slots } = response.data;
 
-        await Promise.all(slots.map(async (slot) => {
+        const tracedAll = traceAsync(async (promises) => Promise.all(promises), 'common-widgets--all--get');
 
-            if (slot && slot.widget.uri) {
-                try {
-                    const response = await commonWidgetsService.tracedGet(slot.widget.uri);
-                    slot.widget.content = response.data;
-                } catch (err) {
-                    console.error(err.message);
-                    slot.widget.content = 'The content is currently unavailable. Please try again later.';
-                }
-            } else {
-                slot = slot || {};
-                slot.id = slot.id || 'unknown';
-                slot.widget = slot.widget || {};
-                slot.widget.content = 'No such widget was found!';
+        const slotsPromises = slots.map((slot) => {
+            return Promise.resolve(slot)
+                    .then(({ widget: { uri } }) => {
 
-                console.warn(`skipping GET for slot ${slot.id} - no uri`);
-            }
+                        if (!uri) throw new Error(`No uri found for slot: ${slot.id}`);
 
-        }));
+                        return commonWidgetsService.tracedGet(uri)
+                    })
+                    .then(({ data }) => {
+                        slot.widget.content = data;
 
-        res.render(layout, { title, slots, meta: { isDebug } });
+                        return Promise.resolve(slot);
+                    })
+                    .catch((err) => {
+                        console.error(err.message);
+                        slot.widget.content = 'The content is currently unavailable. Please try again later.';
+
+                        return Promise.resolve(slot);
+                    });
+        });
+        let slotsWithWidgetContent = await tracedAll(slotsPromises);
+
+        const traceRender = trace((layout, data) => res.render(layout, data), 'render-page');
+        traceRender(layout, { title, slots: slotsWithWidgetContent, meta: { isDebug } });
 
     } catch (err) {
 

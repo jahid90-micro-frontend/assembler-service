@@ -10,5 +10,5 @@ const fetchPageMetadata = async (pageId) => {
 
 module.exports = {
     get: fetchPageMetadata,
-    tracedGet: traceAsync(fetchPageMetadata, 'page-service-metadata-get')
+    tracedGet: traceAsync(fetchPageMetadata, 'page-service--page-metadata--get')
 }
