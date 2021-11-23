@@ -8,7 +8,7 @@
   },
   "dependencies": {
     "@jahiduls/lib-tracing": "^1.0.4",
-    "axios": "^0.21.1",
+    "axios": "^0.23.0",
     "express": "^4.17.1",
     "morgan": "^1.10.0",
     "pug": "^3.0.2"
